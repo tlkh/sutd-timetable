@@ -31,6 +31,7 @@ function attachCalendar(){
 		editable: false,
 		defaultView: 'agendaWeek',
 		eventRender: handleEventRender,
+		eventClick: handleEventClick,
 	});
 	$.getJSON( 'groups', function(r){
 		window.groups = r;
@@ -73,6 +74,7 @@ function toggleSection( action, section ){
 	} else {
 		$.getJSON( 'section/' + section, function(r){
 			if ( r.status == 'error' ) return;
+			r.section = section
 			window.sources[section] = r;
 			toggleEventSource( action, section );
 		});
@@ -84,6 +86,21 @@ function toggleEventSource( action, section ){
 	$("#calendar").fullCalendar( action, window.sources[section] );
 }
 
+function getEditForm( evt ){
+	return evt.source.section + '/' + $.inArray( evt, evt.source.events );
+}
+
 function handleEventRender( evt, element ){
-	$("<span class='text'/>").text( evt.description ).appendTo( element );
+	$("<span class='text'/>").text( evt.description ).appendTo( element.find('.fc-content') );
+	element.popover({
+		title: 'Edit Lesson Location',
+		content: getEditForm(evt),
+		trigger: 'manual', html: true,
+		placement: 'auto bottom',
+	});
+}
+
+function handleEventClick( evt, jsEvt ){
+	$('.fc-event').not(this).popover('hide');
+	$(this).popover('show');
 }
