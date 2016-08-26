@@ -8,6 +8,10 @@ from .models import Module, Section, Lesson
 def index():
     return app.send_static_file('index.html')
 
+@app.route('/editor')
+def group_editor():
+    return app.send_static_file('editor.html')
+
 @app.route('/locations')
 def get_locations():
     return json.jsonify( rd.hgetall('locations') )
