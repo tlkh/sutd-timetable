@@ -1,6 +1,7 @@
 from datetime import datetime
 from icalendar import Calendar, Event
 from flask import request, json
+from time import time
 from app import rd, db, models, app
 from .models import Module, Section, Lesson
 
@@ -19,6 +20,10 @@ def get_locations():
 @app.route('/groups')
 def get_groups():
     return json.jsonify({ g:tuple(rd.smembers('group:%s'%g)) for g in rd.smembers('groups') })
+
+@app.route('/tgrp')
+def get_tgrp():
+    return json.jsonify({ g:tuple(rd.smembers('tgrp:%s'%g)) for g in rd.smembers('tgrps') })
 
 @app.route('/modules')
 def get_modules():
@@ -112,6 +117,8 @@ def load_data():
         db.session.add( Module(**{'code': module['code'], 'title': module['title']}) )
 
     sections = []
+    grp_sect = []
+
     for cn, section in module['sections'].items():
         cn = int(cn)
         sct = Section.query.get(cn)
@@ -126,6 +133,7 @@ def load_data():
             Lesson.query.filter_by(class_no=cn).delete()
 
         sections.append( section['name'] )
+        grp_sect.append( cn )
 
         sn = 0
         for i in section['schedule']:
@@ -139,5 +147,9 @@ def load_data():
             sn += 1
 
         db.session.commit()
+
+    gtime = int(time())
+    rd.sadd( 'tgrps', gtime )
+    rd.sadd( 'tgrp:%s'%gtime, *grp_sect )
 
     return json.jsonify({'status': 'ok','loaded': (module['code'], ', '.join(sections)) })
