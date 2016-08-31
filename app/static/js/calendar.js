@@ -82,21 +82,51 @@ function toggleSection( action, section ){
 }
 
 function toggleEventSource( action, section ){
+	$(".fc-event").popover('hide');
 	action = ( action ? 'add' : 'remove' ) + 'EventSource';
 	$("#calendar").fullCalendar( action, window.sources[section] );
 }
 
 function getEditForm( evt ){
-	return evt.source.section + '/' + $.inArray( evt, evt.source.events );
+	var fid = evt.source.section + '-' + $.inArray( evt, evt.source.events );
+	var form = $("<div class='form-inline' style='width:240px'/>");
+	var bt = $("<button type='button' class='btn btn-primary' onclick='submitEdit(this);'/>");
+	form.append("<input id='"+fid+"' type='text' class='form-control'> ");
+	bt.append("<i style='display:none'></i>");
+	bt.append($("<span class='text'/>").text("Ok")).appendTo(form);
+	return form;
 }
 
 function handleEventRender( evt, element ){
+	var cb = " <a class='pull-right' onclick='cancelEdit(this);'>&times;</a>";
 	$("<span class='text'/>").text( evt.description ).appendTo( element.find('.fc-content') );
 	element.popover({
-		title: 'Edit Lesson Location',
+		title: "Edit Lesson Location" + cb,
 		content: getEditForm(evt),
 		trigger: 'manual', html: true,
 		placement: 'auto bottom',
+	});
+}
+
+function cancelEdit(elem){ $(elem).parent().parent().popover('hide'); }
+
+function submitEdit(elem){
+	var box = $(elem).parent().parent().parent(), spn = box.find('i');
+	var txt = box.find('input')[0], dt = {loc: txt.value, id: txt.id};
+	console.log(dt);
+	spn.attr({style:'','class':'fa fa-spinner fa-pulse'});
+	box.find('span').html('');
+	$.ajax( '/editlocation', {
+		type: 'POST', contentType: 'application/json',
+		data: JSON.stringify(dt),
+		success: function(r){
+			setTimeout(function(){box.popover('hide');}, 1000);
+			spn.attr({'class':'fa fa-check-circle-o'});
+		},
+		error: function(r){
+			console.log(r);
+			spn.attr({'class':'fa fa-exclamation-triangle'});
+		}
 	});
 }
 

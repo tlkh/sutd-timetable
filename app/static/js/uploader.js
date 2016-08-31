@@ -87,7 +87,7 @@ function sendData( data ){
 				$("#ubar").attr({style:'width: '+100*curv/maxv+'%'}).text( r.loaded[0] );
 				curv++;
 			},
-			error: function(){ console.log(r); }
+			error: function(r){ console.log(r); }
 		}));
 	});
 
