@@ -120,6 +120,22 @@ def get_timetable():
 
     return cal.to_ical(), 200, {'content-type': 'text/calendar'}
 
+@app.route('/editlocation', methods=['POST'])
+def edit_location():
+    ticket = request.get_json()
+    # rd.hgetall('locations')
+    try:
+        cn, sn = [int(i) for i in ticket['id'].split('-')]
+    except KeyError:
+        return json.jsonify({'status': 'error'})
+
+    new_loc = ticket.get('loc','')
+
+    sct = Section.query.get(cn)
+    l = Lesson.query.filter_by(class_no=cn,sn=sn).first()
+
+    return json.jsonify({'status': 'ok'})
+
 @app.route('/upload', methods=['POST'])
 def load_data():
     
