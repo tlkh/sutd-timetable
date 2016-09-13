@@ -13,6 +13,10 @@ def index():
 def group_editor():
     return app.send_static_file('editor.html')
 
+@app.route('/domain')
+def domain_warning():
+    return app.send_static_file('domain.html')
+
 @app.route('/locations')
 def get_locations():
     return json.jsonify( rd.hgetall('locations') )
@@ -153,14 +157,12 @@ def load_data():
         sct = Section.query.get(cn)
 
         if not sct:
-            sc = {
+            db.session.add(Section(**{
                 'class_no': cn,
                 'name': section['name'],
                 'mod_code': module['code']
-            }
-            db.session.add(Section(**sc))
+            }))
             db.session.commit()
-            print("added %s" % sc)
         else:
             sct.last_updated = datetime.now()
             Lesson.query.filter_by(class_no=cn).delete()
@@ -172,11 +174,10 @@ def load_data():
         for i in section['schedule']:
             d = tuple(int(n) for n in reversed(i['d'].split('.')))
             dts = [datetime(*(d+tuple(map(int,i[l].split('.'))))) for l in 'se']
-            lesson = {
+            db.session.add(Lesson(**{
                 'class_no': cn, 'sn': sn, 'dts': dts,
                 'location': i['l'], 'component':i['c'],
-            }
-            db.session.add(Lesson(**lesson))
+            }))
             sn += 1
 
         db.session.commit()

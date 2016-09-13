@@ -1,9 +1,7 @@
 function parseTimetable( soup )
 {
-	var locations = JSON.parse( localStorage.locations );
-
 	function getLoc( loc ){
-		for ( var k in locations ){ if(locations[k]==loc) return k; }
+		for ( var k in window.locations ){ if(window.locations[k]==loc) return k; }
 		return loc;
 	}
 
@@ -14,6 +12,7 @@ function parseTimetable( soup )
 		return time.join('.');
 	}
 
+	window.loadchecked = [];
 	var nw = (new Date()).toISOString().slice(0,10).replace(/-/g,"/");
 	var processed=[], pg=$("<div/>").html( soup.replace(/<img[^>]*>/g,"") );
 	$.each( pg.find("div[id^='win0divDERIVED_REGFRM1_DESCR20']"), function(k,s){
@@ -31,6 +30,7 @@ function parseTimetable( soup )
 				class_number = parseInt(cn);
 				if ( iz.MTG_SECTION ) section = iz.MTG_SECTION;
 				module.sections[class_number] = { name:section, schedule:[] };
+				window.loadchecked.push(cn);
 			}
 			if ( iz.MTG_COMP != '\xa0' ) comp = iz.MTG_COMP;
 			var item = {
@@ -92,7 +92,11 @@ function sendData( data ){
 	});
 
 	$.when.apply(null, promises).done(function(){
-		setTimeout(function(){ $("#uprog").attr({style:'display:none'}); }, 1000);
+		setTimeout(function(){
+			$.getJSON( "modules", loadModules );
+			$("#uprog").attr({style:'display:none'});
+			$("#ualert").addClass("hidden");
+		}, 1000);
 		$("#spinner").attr({'class':'fa fa-check-circle-o'});
 		$("#buttext").html(" Done!");
 		showAlert('success','<strong>Success!</strong> Thank you for your submission.');
@@ -110,8 +114,8 @@ function showAlert( style, message ){
 }
 
 function attachUploader(){
-	$("#uploader").load( '/static/form.html', '', function(){
-		$("#loader").on('change',function(e){ loadFile(e.target.files[0]); });
+	$("#uploader").load( "/static/form.html", "", function(){
+		$("#loader").on("change", function(e){ loadFile(e.target.files[0]); });
 		$("#ubutt").click(function(e){ sendData( JSON.parse( localStorage.processed ) ); });
 	});
 }
