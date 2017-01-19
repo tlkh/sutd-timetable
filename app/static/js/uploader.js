@@ -1,7 +1,11 @@
 function parseTimetable( soup )
 {
 	function getLoc( loc ){
-		for ( var k in window.locations ){ if(window.locations[k]==loc) return k; }
+		for ( var k in window.locations ){
+			if ( window.locations[k].indexOf(loc) !== -1 ) return k;
+			if ( loc.indexOf(window.locations[k]) !== -1 ) return k;
+		}
+		console.log(loc);
 		return loc;
 	}
 
@@ -15,6 +19,7 @@ function parseTimetable( soup )
 	window.loadchecked = [];
 	var nw = (new Date()).toISOString().slice(0,10).replace(/-/g,"/");
 	var processed=[], pg=$("<div/>").html( soup.replace(/<img[^>]*>/g,"") );
+	var weekdays = {'Mo': 1, 'Tu': 2, 'We': 3, 'Th': 4, 'Fr': 5};
 	$.each( pg.find("div[id^='win0divDERIVED_REGFRM1_DESCR20']"), function(k,s){
 		var class_number, comp, section;
 		var mod = $(s).find(".PAGROUPDIVIDER").text().split(' - ');
@@ -34,10 +39,15 @@ function parseTimetable( soup )
 			}
 			if ( iz.MTG_COMP != '\xa0' ) comp = iz.MTG_COMP;
 			var item = {
-				c:comp, l:getLoc(iz.MTG_LOC), d:iz.MTG_DATES.split(' - ')[0].replace(/\//g,'.'),
+				c:comp, l:getLoc(iz.MTG_LOC),
 				s:parseTime(treg.exec(iz.MTG_SCHED)), e:parseTime(treg.exec(iz.MTG_SCHED))
 			}
-			module.sections[class_number].schedule.push(item);
+			var d, wd = weekdays[iz.MTG_SCHED.split(' ')[0]];
+			var dates = iz.MTG_DATES.split(' - ').map(function(d){return moment(d, 'DD/MM/YYYY')});
+			if( dates[0].day() != wd ) dates[0].day(wd);
+			for( d=dates[0]; d <= dates[1]; d.add(7,'d') ){
+				module.sections[class_number].schedule.push($.extend({d:d.format('YYYY.MM.DD')}, item));
+			}
 		});
 		processed.push( module )
 	});
@@ -58,6 +68,7 @@ function loadFile( f ){
 			r.onload = function(e){
 				var processed = parseTimetable( e.target.result );
 				if ( processed.length > 0 ){
+					processed.push({ group: window.loadchecked });
 					console.log( processed );
 					localStorage.processed = JSON.stringify( processed );
 				} else {
